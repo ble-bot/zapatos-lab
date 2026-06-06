@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAPATOS.LAB | Streetwear Culture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap');
+        :root { --accent: #ff0055; --accent-glow: rgba(255, 0, 85, 0.5); --bg: #030303; --transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg); color: white; overflow-x: hidden; cursor: none; }
+        h1, h2, .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        .custom-cursor { width: 20px; height: 20px; border: 2px solid var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; transition: transform 0.1s ease; mix-blend-mode: difference; }
+        .cursor-hover { transform: scale(3); background: var(--accent); border: none; }
+        .glass { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .neon-text { color: transparent; -webkit-text-stroke: 1px var(--accent); text-shadow: 0 0 20px rgba(255, 0, 85, 0.3); }
+        .product-card { transition: var(--transition); }
+        .product-card:hover { transform: translateY(-15px) scale(1.02); }
+        .size-btn { transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+        .size-btn.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 1s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .animate-marquee { display: flex; width: max-content; animation: marquee 20s linear infinite; }
+    </style>
+</head>
+<body>
+    <div class="custom-cursor" id="cursor"></div>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const SIZES = [38, 39, 40, 41, 42, 43, 44, 45];
+        const PRODUCTS = [
+            { id: 1, name: 'Neon Velocity X', price: 129.99, image: 'static/images/4c4f3709ce57dfa94de50b55989d2955.jpeg', cat: 'PERFORMANCE' },
+            { id: 2, name: 'Urban Stealth High', price: 159.99, image: 'static/images/5d53030eec7825c145ed294fec7669c0.jpeg', cat: 'CYBERPUNK' },
+            { id: 3, name: 'Cyber Orbit Low', price: 110.00, image: 'static/images/e5c4c7fe-3135-46ee-87e7-48751efee93e.webp', cat: 'STREETWEAR' },
+            { id: 4, name: 'Heritage Classic', price: 89.99, image: 'static/images/images.jpeg', cat: 'RETRO' },
+            { id: 5, name: 'Vibe Master Pro', price: 199.99, image: 'static/images/IMG_6353.jpg', cat: 'PREMIUM' }
+        ];
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, []);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+        const App = () => {
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [selectedSize, setSelectedSize] = useState({});
+            const [filter, setFilter] = useState('TODOS');
+            const [isVideoOpen, setIsVideoOpen] = useState(false);
+            const WHATSAPP_NUMBER = "573234312418";
+            const filteredProducts = useMemo(() => filter === 'TODOS' ? PRODUCTS : PRODUCTS.filter(p => p.cat === filter), [filter]);
+            const total = useMemo(() => cart.reduce((acc, item) => acc + (item.price * item.qty), 0), [cart]);
+            const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
+            useEffect(() => {
+                const cursor = document.getElementById('cursor');
+                const moveCursor = (e) => { cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; };
+                window.addEventListener('mousemove', moveCursor);
+                const updateHoverables = () => {
+                    document.querySelectorAll('button, a, .product-card').forEach(h => {
+                        h.onmouseenter = () => cursor.classList.add('cursor-hover');
+                        h.onmouseleave = () => cursor.classList.remove('cursor-hover');
+                    });
+                };
+                updateHoverables();
+                return () => window.removeEventListener('mousemove', moveCursor);
+            }, [filteredProducts, cart, isCartOpen]);
+            useEffect(() => {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); });
+                }, { threshold: 0.1 });
+                document.querySelectorAll('.reveal').forEach(r => observer.observe(r));
+            }, [filteredProducts]);
+            const addToCart = (p) => {
+                const size = selectedSize[p.id];
+                if (!size) { alert('Selecciona una talla'); return; }
+                const cartId = `${p.id}-${size}`;
+                const existing = cart.find(i => i.cartId === cartId);
+                if (existing) setCart(cart.map(i => i.cartId === cartId ? { ...i, qty: i.qty + 1 } : i));
+                else setCart([...cart, { ...p, cartId, size, qty: 1 }]);
+                setIsCartOpen(true);
+            };
+            const sendWhatsApp = () => {
+                const msg = cart.map(i => `👟 *${i.name}* (Talla ${i.size}) x${i.qty}`).join('\n');
+                window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Pedido:\n'+msg+'\nTotal: $'+total.toFixed(2))}`, '_blank');
+            };
+            return (
+                <div className="min-h-screen">
+                    <nav className="glass sticky top-0 z-50 h-24 flex items-center justify-between px-8 md:px-20 border-b border-white/5">
+                        <div className="text-3xl font-black tracking-tighter flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+                            <div className="w-10 h-10 bg-white rounded-xl"></div>
+                            ZAPATOS<span className="text-[#ff0055]">.LAB</span>
+                        </div>
+                        <div className="hidden lg:flex gap-14 text-[11px] font-black uppercase tracking-widest">
+                            <a href="#products" className="hover:text-[#ff0055]">Lanzamientos</a>
+                            <a href="#footer" className="hover:text-[#ff0055]">Comunidad</a>
+                        </div>
+                        <div className="relative cursor-pointer p-4 rounded-2xl bg-white/5" onClick={() => setIsCartOpen(true)}>
+                            <Icon name="shopping-bag" />
+                            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ff0055] text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
+                        </div>
+                    </nav>
+                    <div className="bg-[#ff0055] py-2 overflow-hidden"><div className="animate-marquee whitespace-nowrap"><span className="text-[10px] font-black uppercase tracking-widest mx-10">Envíos gratis en pedidos superiores a $200 — 10% OFF en tu primera compra</span></div></div>
+                    <section className="relative h-[90vh] flex items-center px-8 md:px-24">
+                        <div className="reveal">
+                            <h1 className="text-7xl md:text-9xl font-black leading-none mb-10">BEYOND <br/><span className="neon-text">RULES.</span></h1>
+                            <p className="max-w-lg text-gray-400 text-lg mb-12">No seguimos tendencias, las creamos. Ingeniería de alto rendimiento fusionada con Streetwear.</p>
+                            <div className="flex gap-6">
+                                <button onClick={() => document.getElementById('products').scrollIntoView({behavior:'smooth'})} className="bg-white text-black px-12 py-6 font-black rounded-2xl">Explorar</button>
+                                <button onClick={() => setIsVideoOpen(true)} className="glass px-12 py-6 font-black rounded-2xl">Lookbook</button>
+                            </div>
+                        </div>
+                    </section>
+                    <section id="products" className="py-40 px-8 md:px-24 bg-[#050505]">
+                        <div className="flex justify-between items-end mb-24 reveal">
+                            <h2 className="text-6xl font-black uppercase">The <span className="text-[#ff0055]">Drop</span></h2>
+                            <div className="flex gap-6 text-[10px] font-black text-gray-500 uppercase">
+                                {['TODOS', 'PERFORMANCE', 'CYBERPUNK', 'STREETWEAR'].map(c => <button key={c} onClick={() => setFilter(c)} className={filter === c ? 'text-[#ff0055]' : ''}>{c}</button>)}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16">
+                            {filteredProducts.map(p => (
+                                <div key={p.id} className="product-card group glass rounded-[3.5rem] p-6 reveal">
+                                    <img src={p.image} className="w-full h-80 object-cover rounded-[2.5rem] mb-6" />
+                                    <p className="text-[#ff0055] text-[10px] font-black uppercase mb-2">{p.cat}</p>
+                                    <h3 className="text-3xl font-black mb-6">{p.name}</h3>
+                                    <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar">
+                                        {SIZES.map(s => <button key={s} onClick={() => setSelectedSize({...selectedSize, [p.id]: s})} className={`size-btn min-w-[40px] h-[40px] rounded-lg text-[10px] font-black ${selectedSize[p.id] === s ? 'active' : 'bg-white/5'}`}>{s}</button>)}
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-3xl font-black">${p.price}</p>
+                                        <button onClick={() => addToCart(p)} className="w-14 h-14 bg-white text-black rounded-2xl flex items-center justify-center hover:bg-[#ff0055] hover:text-white transition-colors"><Icon name="plus" /></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-[100] flex justify-end">
+                            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="relative w-full max-w-xl bg-black border-l border-white/10 flex flex-col p-10 animate-fade">
+                                <div className="flex justify-between items-center mb-10">
+                                    <h2 className="text-4xl font-black">BAG <span className="text-[#ff0055] text-sm">{cartCount}</span></h2>
+                                    <button onClick={() => setIsCartOpen(false)}><Icon name="x" size={32} /></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto space-y-8">
+                                    {cart.map(i => (
+                                        <div key={i.cartId} className="flex gap-6 items-center">
+                                            <img src={i.image} className="w-24 h-24 object-cover rounded-2xl" />
+                                            <div className="flex-1">
+                                                <h4 className="text-xl font-black">{i.name}</h4>
+                                                <p className="text-[#ff0055] text-[10px] font-black uppercase">Talla {i.size}</p>
+                                                <p className="text-2xl font-black">${i.price}</p>
+                                            </div>
+                                            <button onClick={() => setCart(cart.filter(x => x.cartId !== i.cartId))}><Icon name="trash-2" /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pt-10 border-t border-white/10">
+                                    <div className="flex justify-between mb-10"><span className="text-gray-500 font-black">Total</span><span className="text-5xl font-black">${total.toFixed(2)}</span></div>
+                                    <button onClick={sendWhatsApp} className="w-full py-8 bg-[#25D366] text-black font-black rounded-3xl uppercase tracking-widest flex items-center justify-center gap-4">
+                                        <Icon name="message-circle" /> Finalizar Pedido
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {isVideoOpen && <div className="fixed inset-0 z-[200] flex items-center justify-center p-10"><div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setIsVideoOpen(false)}></div><div className="relative w-full max-w-5xl aspect-video bg-[#111] rounded-[3rem] border border-white/10 flex items-center justify-center"><Icon name="play" size={80} className="text-[#ff0055]" /><button onClick={() => setIsVideoOpen(false)} className="absolute top-8 right-8"><Icon name="x" size={32} /></button></div></div>}
+                    <footer id="footer" className="py-20 border-t border-white/5 text-center text-[10px] font-black text-gray-700 tracking-[0.5em] uppercase">&copy; 2026 ZAPATOS.LAB / DESIGNED FOR THE STREETS.</footer>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

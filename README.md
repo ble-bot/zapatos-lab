@@ -53,5 +53,3 @@ Este proyecto ha sido estructurado para ser extremadamente fácil de desplegar s
 El botón de compra está vinculado actualmente al número de soporte del desarrollador. Para producción, simplemente cambia la constante `WHATSAPP_NUMBER` en el archivo `index.html`.
 
 ---
-
-> Prototipo diseñado y desarrollado por **[Tu Nombre]** para el curso de Vibe Coding 2026.
